@@ -15,9 +15,11 @@ void extact_header();
 void print_parameters(parameters* pms);
 void located_file(char* path, const char* name);
 int check_path(const char* path);
-void project_directory(parameters* pms);
+void project_directory(parameters* pms, const char* additional_dir);
 void project_content(parameters* pms);
 void files(const char* header_caps, const parameters* pms);
-
+void additional_files(parameters* pms);
+char* add_tail(char* dest, const char* name, 
+                const char* path, const char* extension);
 #endif
 

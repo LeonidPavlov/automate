@@ -6,6 +6,7 @@
 
 #include "template.h"
 
+char path[AT_LEAST_SIGNIFICANT * 4] = {0};
 
 void handle_args(int argc, char* argv[])
 {    
@@ -29,13 +30,13 @@ void handle_args(int argc, char* argv[])
         if (argc == 3 && strcmp(argv[1], "project") == 0) {
             strcpy(pms.name, argv[2]);
             extact_header(&pms);
-            if (check_path(pms.path)) project_directory(&pms);
+            if (check_path(pms.path)) project_directory(&pms,"");
         }
         if (argc == 4 && strcmp(argv[1], "project") == 0) {
             strcpy(pms.name, argv[2]);
             strcpy(pms.path, argv[3]);
             extact_header(&pms);
-            if(check_path(pms.path)) project_directory(&pms);
+            if(check_path(pms.path)) project_directory(&pms, "");
         }
     }
     print_parameters(&pms);
@@ -97,15 +98,25 @@ int check_path(const char* path)
     return result;
 }
 
-void project_directory(parameters* pms)
+void project_directory(parameters* pms, const char* additional_dir)
 {
-    DIR* dir = opendir(pms->path);
+    DIR* dir = NULL;
+    if(strcmp(additional_dir,"") == 0) dir = opendir(pms->path);
     strcat(strcat(pms->path,"/"), pms->name);
+    strcpy(path, pms->path);
+    if (strcmp(additional_dir, "") != 0) {
+        dir = opendir(path);
+        printf("path ->>> %s\n",path);
+        strcat(strcat(path,"/"), additional_dir);
+        puts("ADDITIONAL DIR");
+    } 
+    printf("path ->>> %s\n",path);
+
     if(dir) {
-        mkdir(pms->path, 0777);
+        mkdir(path, 0777);
         project_content(pms);
     } 
-    else fprintf(stderr, "DIRECTORY %s NOT EXIST\n", pms->path);      
+    else fprintf(stderr, "DIRECTORY %s NOT EXIST\n", path);      
     closedir(dir);
 }
 
@@ -120,16 +131,55 @@ void project_content(parameters* pms)
     fprintf(stderr, "header -> %s\n", header_caps);
    
     files(header_caps, pms);
+    additional_files(pms);
 }
+
 
 void files(const char* header_caps, const parameters* pms)
 {    
-    strcat(strcat(strcat(strcpy(pms->path, pms->path),"/"),pms->header),".h");
-    FILE* file = fopen(pms->path, "w");
-    fprintf(file,   "#ifndef %s\n"
+    char* path_ptr = add_tail(path, pms->path, pms->header, ".h");
+    
+    FILE* hider = fopen(path_ptr, "w");
+    fprintf(hider,   "#ifndef %s\n"
                     "#define %s\n\n"
+                    "#define PROJECT_NAME \"%s\"\n\n"
                     "\tvoid greeting(void);\n\n"
                     "#endif"
-                    ,header_caps, header_caps);
-    fclose(file);
+                    ,header_caps, header_caps, pms->name);
+    fclose(hider);
+
+    path_ptr = add_tail(path, pms->path, pms->header, ".c");
+    FILE* row_file = fopen(path_ptr, "w");
+    fprintf(row_file,   "#include <stdio.h>\n\n"
+                        "#include \"%s.h\"\n\n"
+                        "void greeting(void)\n"
+                        "{\n"
+                        "\tfprintf(stdout, \"project %%s\\n\", %s);\n"
+                        "}\n"
+                        ,pms->header, "PROJECT_NAME");
+    fclose(row_file);
+
+    path_ptr = add_tail(path, pms->path, "main", ".c");
+    FILE* main = fopen(path_ptr, "w");
+    fprintf(main,   "#include <stdlib.h>\n\n"
+                    "#include \"%s.h\"\n\n"
+                    "int main(int argc, char* argv[])\n"
+                    "{\n"
+                    "\t greeting();\n"
+                    "\t return EXIT_SUCCESS;\n"
+                    "}\n"
+                    , pms->header);
+    fclose(main);
+}
+
+char* add_tail(char* dest, const char* path, const char* name, const char* ext)
+{
+    strcat(strcat(strcat(strcpy(dest, path), "/"), name), ext);
+    return dest;
+}
+
+void additional_files(parameters* pms)
+{
+    project_directory(pms, "dist");
+    
 }
