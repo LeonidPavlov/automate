@@ -1,15 +1,20 @@
-all : compile
-	# ../dist/template_C.out
+test : dist/template.out
+	valgrind dist/template.out 23_cocky_huy ../..
 
-compile : template.o main.o
-	gcc template.o main.o -o ../dist/template_C.out
+dist/template.out : template.o test.o cocky_library.o
+	gcc template.o test.o cocky_library.o -o dist/template.out
 
-template.o : template.c template.h
+template.o : template.h template.c
 	gcc -c template.c
 
-main.o : main.c template.h
-	gcc -c main.c
+cocky_library.o : lib/cocky_library.c lib/cocky_library.h
+	gcc -c lib/cocky_library.c
 
-clear : 
-	rm -f *.o
+test.o : test.c template.h
+	gcc -c test.c
 
+valgrind :
+	valgrind dist/template.out 23_cocky_huy ../..
+
+clear :
+	rm *.o dist/*.out

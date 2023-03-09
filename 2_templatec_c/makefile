@@ -1,17 +1,20 @@
-tmp=template
-out=template.out
+test : dist/test.out
+	dist/test.out
 
-all : ${out}
-	./${out} file
+dist/test.out : template.o test.o cocky_library.o
+	gcc template.o test.o cocky_library.o -o dist/test.out
 
-${out} : ${tmp}.o main.o
-	gcc *.o -o ${out}
+template.o : template.h template.c
+	gcc -c template.c
 
-${tmp}.o : ${tmp}.c ${tmp}.h
-	gcc -c ${tmp}.c
+cocky_library.o : lib/cocky_library.c lib/cocky_library.h
+	gcc -c lib/cocky_library.c
 
-main.o : main.c ${tmp}.h
-	gcc -c main.c
+test.o : test.c template.h
+	gcc -c test.c
 
-clear : 
-	rm -f *.o
+valgrind :
+	valgrind dist/test.out
+
+clear :
+	rm *.o dist/*.out

@@ -1,185 +1,110 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <sys/stat.h>
 
+
 #include "template.h"
+#include "lib/cocky_library.h"
 
-char path[AT_LEAST_SIGNIFICANT * 4] = {0};
+const char* usage = "\nInitial C project folder generator\n"
+                    "usage: ./template.out [FOLDER_NAME] [PATH]\n"
+                    "FOLDER_NAME - must be at least one letter\n"
+                    "PATH - is optional\n\n";
+params parameters;
+params* ppm = &parameters;
 
-void handle_args(int argc, char* argv[])
-{    
-    parameters pms = {".", "c_source_file", ""};
-
-    for (int j = argc - 1; j >= 0; j--)
-        fprintf(stderr,"argv[%d] -> %s\n", j, argv[j]);
-
-    if (argc == 1) print_manual();
-    if (argc == 2) print_manual();
-    if (argc == 3 || argc == 4) {
-        if (argc == 3 && strcmp(argv[1],"file") == 0) {
-            strcpy(pms.name, argv[2]);
-            if(check_path(pms.path)) located_file(pms.path, pms.name);
-        }
-        if (argc == 4 && strcmp(argv[1], "file") == 0) {
-            strcpy(pms.name, argv[2]);
-            strcpy(pms.path, argv[3]);
-            if(check_path(pms.path)) located_file(pms.path, pms.name);
-        }
-        if (argc == 3 && strcmp(argv[1], "project") == 0) {
-            strcpy(pms.name, argv[2]);
-            extact_header(&pms);
-            if (check_path(pms.path)) project_directory(&pms,"");
-        }
-        if (argc == 4 && strcmp(argv[1], "project") == 0) {
-            strcpy(pms.name, argv[2]);
-            strcpy(pms.path, argv[3]);
-            extact_header(&pms);
-            if(check_path(pms.path)) project_directory(&pms, "");
-        }
-    }
-    print_parameters(&pms);
-}
-
-void print_manual()
+void interview(int argc, char* argv[])
 {
-    puts("\ncommand line arguments");
-    puts("1 - [TYPE WORD] project or file");
-    puts("2 - [FILE NAME] or [PROJECT NAME] without extension");
-    puts("3 - [PATH] default -> current directory");
-}
-
-void extact_header(parameters* pms)
-{
-	int k = 0;
-	while (!isalpha(pms->name[k++]));
-	k--;
-	printf("skip characters -> %d\n", k);
-	for (int i = 0; pms->name[k] !='\0'; k++, i++) 
-                                        pms->header[i] = pms->name[k];
-	pms->header[k] = '\0';
-    printf("pms.path -> %s pms.name -> %s pms.header -> %s\n",
-                        pms->path, pms->name, pms->header);
-}
-
-void print_parameters(parameters* pms)
-{
-    fprintf(stderr, "param.path->%s\nparam.name->%s\nparam.header->%s\n",
-                    pms->path, pms->name, pms->header);
-}
-
-void located_file(char* path, const char* name)
-{
-    strcat(strcat(strcat(path, "/"),name), ".c");
-    fprintf(stderr, "located file temp-> %s\n", path);
-    FILE* file = fopen(path,"w");
-    fprintf(file,
-                    "#include <stdio.h>\n"
-                    "#include <stdlib.h>\n\n"
-                    "int main(int argc, char* argv[])\n"
-                    "{\n"
-                    "\tprintf(\"file %s.c\");\n"
-                    "\treturn EXIT_SUCCESS;\n"
-                    "}\n", name);
-    fclose(file);
-}
-
-int check_path(const char* path)
-{
-    int result = 0;
-    DIR* dir = opendir(path);
-    if (dir) result = 1;
+    if(argc == 1) {
+        fprintf(stdout,"%s" ,usage);
+        exit(0);
+    } 
+    if(argc == 2) params_constructor(ppm, argv[1], "");
+    if(argc == 3 && check_dir_existance(argv[2])) 
+                            params_constructor(ppm, argv[1], argv[2]);
     else {
-        fprintf(stderr, "ERROR PATH NOT EXIST -> %s\n", path);
-        result = 0;
+        fprintf(stdout,"%s" ,usage);
+        exit(0);
+    } 
+        
+    params_content(ppm);
+    add_directories(ppm);
+    kill_params(ppm);
+}
+
+void params_constructor(params* pms, const char* name, const char* dir)
+{
+    // obtain full project name
+    pms->full_name = (char*) malloc(strlen(name) + 1);
+    strcpy(pms->full_name, name);
+    
+    // shrink possible leading numbers
+    pms->alpha_name = shrink_to_first_alpha(pms->full_name);
+    if(strlen(pms->alpha_name) == 1) {
+        fprintf(stderr, "ILLEGAL PROJECT NAME\n");
+        exit(0);
     }
-    closedir(dir);
-    return result;
-}
-
-void project_directory(parameters* pms, const char* additional_dir)
-{
-    DIR* dir = NULL;
-    if(strcmp(additional_dir,"") == 0) dir = opendir(pms->path);
-    strcat(strcat(pms->path,"/"), pms->name);
-    strcpy(path, pms->path);
-    if (strcmp(additional_dir, "") != 0) {
-        dir = opendir(path);
-        printf("path ->>> %s\n",path);
-        strcat(strcat(path,"/"), additional_dir);
-        puts("ADDITIONAL DIR");
-    } 
-    printf("path ->>> %s\n",path);
-
-    if(dir) {
-        mkdir(path, 0777);
-        project_content(pms);
-    } 
-    else fprintf(stderr, "DIRECTORY %s NOT EXIST\n", path);      
-    closedir(dir);
-}
-
-void project_content(parameters* pms)
-{
-    char header_caps[AT_LEAST_SIGNIFICANT] = {0};
-    int j = 0;
-    for ( j; pms->header[j] != '\0'; j++) 
-                        header_caps[j] = toupper(pms->header[j]);
-    header_caps[j] = '\0';
-    strcat(header_caps,"_H");
-    fprintf(stderr, "header -> %s\n", header_caps);
-   
-    files(header_caps, pms);
-    additional_files(pms);
-}
-
-
-void files(const char* header_caps, const parameters* pms)
-{    
-    char* path_ptr = add_tail(path, pms->path, pms->header, ".h");
     
-    FILE* hider = fopen(path_ptr, "w");
-    fprintf(hider,   "#ifndef %s\n"
-                    "#define %s\n\n"
-                    "#define PROJECT_NAME \"%s\"\n\n"
-                    "\tvoid greeting(void);\n\n"
-                    "#endif"
-                    ,header_caps, header_caps, pms->name);
-    fclose(hider);
+    // to upper + _H
+    pms->define_header = to_upper_for_header_file(pms->alpha_name);
 
-    path_ptr = add_tail(path, pms->path, pms->header, ".c");
-    FILE* row_file = fopen(path_ptr, "w");
-    fprintf(row_file,   "#include <stdio.h>\n\n"
-                        "#include \"%s.h\"\n\n"
-                        "void greeting(void)\n"
-                        "{\n"
-                        "\tfprintf(stdout, \"project %%s\\n\", %s);\n"
-                        "}\n"
-                        ,pms->header, "PROJECT_NAME");
-    fclose(row_file);
+    char* fp = calloc(strlen(dir) + strlen(pms->full_name) 
+                        + strlen("//") +1, sizeof(char));
+    pms->folder_path = fp;
+    strcat(strcat(strcpy(fp, dir),"/"), pms->full_name);
 
-    path_ptr = add_tail(path, pms->path, "main", ".c");
-    FILE* main = fopen(path_ptr, "w");
-    fprintf(main,   "#include <stdlib.h>\n\n"
-                    "#include \"%s.h\"\n\n"
-                    "int main(int argc, char* argv[])\n"
-                    "{\n"
-                    "\t greeting();\n"
-                    "\t return EXIT_SUCCESS;\n"
-                    "}\n"
-                    , pms->header);
-    fclose(main);
+    fp = calloc(strlen(pms->folder_path) + strlen("dist") + 2, sizeof("char"));
+    pms->dist_path = fp;
+    strcat(strcat(strcpy(fp, pms->folder_path),"/"), "dist");
 }
 
-char* add_tail(char* dest, const char* path, const char* name, const char* ext)
+void params_content(const params* const pms)
 {
-    strcat(strcat(strcat(strcpy(dest, path), "/"), name), ext);
-    return dest;
+    fprintf(stderr, "full_name -> %s\n", pms->full_name);
+    fprintf(stderr, "alpha_name -> %s\n", pms->alpha_name);
+    fprintf(stderr, "define_header -> %s\n", pms->define_header);
+    fprintf(stderr, "folder_path -> %s\n", pms->folder_path);
+    fprintf(stderr, "dist_path -> %s\n", pms->dist_path);
 }
 
-void additional_files(parameters* pms)
+void kill_params(params* pms){
+    free(pms->full_name);
+    free(pms->alpha_name);
+    free(pms->define_header);
+    free(pms->folder_path);
+    free(pms->dist_path);
+}
+
+int check_dir_existance(const char* assumption)
 {
-    project_directory(pms, "dist");
-    
+    int res = 0;
+    printf("assumption -> %s\n", assumption);
+    DIR* dir = opendir(assumption);
+    if(dir) res = 1;
+    else fprintf(stdout, "directory vacant\n");
+    closedir(dir);
+    return res;
+}
+
+void add_directories(const params* const pms)
+{
+    if (check_dir_existance(pms->folder_path)) {
+        fprintf(stderr, "CAN'T CREATE PROJECT FOLDER -> ALSO EXIST ?\n");
+    } else {
+        mkdir(pms->folder_path, 0777);
+    }
+    if (check_dir_existance(pms->dist_path)) {
+        fprintf(stderr, "CANT CREAT DIST DIR ?\n");
+    } else {
+        mkdir(pms->dist_path, 0777);
+        create_project_files(pms);
+    }
+}
+
+void create_project_files(const params* const pms)
+{
+
 }
