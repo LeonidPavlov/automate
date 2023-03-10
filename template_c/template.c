@@ -106,5 +106,58 @@ void add_directories(const params* const pms)
 
 void create_project_files(const params* const pms)
 {
+    int length = strlen(pms->dist_path) + strlen(pms->full_name) * 2;
+    char* tmp = calloc(length, sizeof(char));
+   
+    FILE* header = fopen(
+        strcat(strcat(strcat(strcpy(tmp, pms->folder_path), "/"),
+                                         pms->alpha_name), ".h"), "w");
+    fprintf(header,     "#ifndef %s\n" 
+                        "#define %s\n\n"
+                        "\t#define MODULE_NAME \"%s\"\n\n"
+                        "\tvoid welcome(void);\n\n"
+                        "#endif\n"
+                        , pms->define_header, pms->define_header,
+                        pms->full_name);
+    fclose(header);
+    
+    FILE* row = fopen(
+        strcat(strcat(strcat(strcpy(tmp, pms->folder_path), "/"),
+                                         pms->alpha_name), ".c"), "w");
+    fprintf(row,    "#include <stdio.h>\n\n"
+                    "#include \"%s.h\"\n\n\n"
+                    "void welcome(void)\n{\n"
+                    "\tfprintf(stderr, \"Welcome ~ %%s\\n\", MODULE_NAME);\n}\n"
+                    , pms->alpha_name);
+    fclose(row);
+    
+    FILE* test = fopen(
+        strcat(strcat(strcat(strcpy(tmp, pms->folder_path), "/"),
+                                         "test"), ".c"), "w");
+    fprintf(test,   "#include \"%s.h\"\n\n\n"
+                    "int main(int argc, char* argv[])\n" 
+                    "{\n\twelcome();\n}\n"  
+                    , pms->alpha_name);
+    fclose(test);
 
+    FILE* make = fopen(
+            strcat(strcat(strcpy(tmp, pms->folder_path),"/"), "makefile"), "w");
+    fprintf(make,   "rf=%s\n"
+                    "tf=test\n"
+                    "exf=dist/%s.out\n\n\n"
+                    "all : ${rf}.o ${tf}.o\n"
+                    "\tgcc ${rf}.o ${tf}.o -o ${exf} && ${exf}\n\n"
+                    "${tf}.o : ${tf}.c ${rf}.h\n"
+                    "\tgcc -c ${tf}.c\n\n"
+                    "${rf} : ${rf}.c ${rf}.h\n"
+                    "\tgcc -c ${rf}.c\n\n"
+                    "clear :\n\trm *.o dist/*.out\n"
+                    , pms->alpha_name ,pms->full_name);
+    fclose(make);
+
+    strcat(strcat(strcpy(tmp, "cd "), pms->folder_path), " && make");
+    system(tmp);
+    strcat(tmp," clear");
+    system(tmp);
+    free(tmp);
 }

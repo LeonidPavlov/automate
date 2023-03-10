@@ -1,5 +1,5 @@
 test : dist/template.out
-	valgrind dist/template.out 23_cocky_huy ../..
+	dist/template.out 23_cocky_stuff ../..
 
 dist/template.out : template.o test.o cocky_library.o
 	gcc template.o test.o cocky_library.o -o dist/template.out
@@ -14,7 +14,7 @@ test.o : test.c template.h
 	gcc -c test.c
 
 valgrind :
-	valgrind dist/template.out 23_cocky_huy ../..
+	valgrind dist/template.out 23_cocky_stuff ../..
 
 clear :
 	rm *.o dist/*.out

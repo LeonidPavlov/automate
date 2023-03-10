@@ -19,9 +19,7 @@ void params_content(const params* const pms);
 void kill_params(params* pms);
 
 int check_dir_existance(const char* assumption);
-
 void add_directories(const params* const pms);
-
 void create_project_files(const params* const pms);
 
 #endif
