@@ -149,9 +149,9 @@ void create_project_files(const params* const pms)
                     "\tgcc ${rf}.o ${tf}.o -o ${exf} && ${exf}\n\n"
                     "${tf}.o : ${tf}.c ${rf}.h\n"
                     "\tgcc -c ${tf}.c\n\n"
-                    "${rf} : ${rf}.c ${rf}.h\n"
+                    "${rf}.o : ${rf}.c ${rf}.h\n"
                     "\tgcc -c ${rf}.c\n\n"
-                    "clear :\n\trm *.o dist/*.out\n"
+                    "clear :\n\trm -f *.o dist/*.out\n"
                     , pms->alpha_name ,pms->full_name);
     fclose(make);
 

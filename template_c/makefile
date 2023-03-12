@@ -17,4 +17,4 @@ valgrind :
 	valgrind dist/template.out 23_cocky_stuff ../..
 
 clear :
-	rm *.o dist/*.out
+	rm -f *.o dist/*.out
