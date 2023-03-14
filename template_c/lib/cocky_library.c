@@ -2,38 +2,51 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <dirent.h>
 
-char* shrink_to_first_alpha(const char* source)
+char* shrink_to_first_alpha(char* dest, const char* source)
 /*
     shrinks not alphabetic simbols in the begining of string
     uses calloc and must be released memory
 */
 {
-    char* temp = calloc(strlen(source) + 1, sizeof(char));
-
     int j = 0;
     for ( j; !isalpha(source[j]) && j <= strlen(source) ; j++);
     
     int k = 0;
-    for ( k, j; source[j] != '\0'; j++, k++) temp[k] = source[j];
-    temp[k] = '\0';
-
-    char* result = calloc(strlen(temp) + 1, sizeof(char));
-    strcpy(result, temp);
-    free(temp);
-
-    return result;
+    for ( k, j; source[j] != '\0'; j++, k++) dest[k] = source[j];
+    dest[k] = '\0';
+    return dest;
 }
 
-char* to_upper_for_header_file(const char* source)
+char* to_upper_for_header_file(char* dest, const char* source)
 /*
     filename without extension to upper case and adds _H
     possible memory leak without release
 */
 {
     const char* suff = "_H";
-    char* result = calloc(strlen(source) + strlen(suff) + 1, sizeof(char));
-    for (int j = 0; source[j] != '\0'; j++) result[j] = toupper(source[j]);
-    strcat(result,suff);
+    for (int j = 0; source[j] != '\0'; j++) dest[j] = toupper(source[j]);
+    strcat(dest,suff);
+    return dest;
+}
+
+int check_one_alpha(const char* source)
+{
+    int result = 0;
+    while(*source != 0)
+        if (isalpha(*(source++))) result = 1;
     return result;
 }
+
+int check_dir_existance(const char* assumption)
+{
+    int res = 0;
+    printf("directory existence assumption -> %s\n", assumption);
+    DIR* dir = opendir(assumption);
+    if(dir) res = 1;
+    else fprintf(stderr, "no such directory\n");
+    closedir(dir);
+    return res;
+}
+

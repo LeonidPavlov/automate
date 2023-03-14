@@ -1,5 +1,5 @@
 test : dist/template.out
-	dist/template.out 23_cocky_stuff ../..
+	dist/template.out
 
 dist/template.out : template.o test.o cocky_library.o dist
 	gcc template.o test.o cocky_library.o -o dist/template.out
@@ -13,11 +13,11 @@ cocky_library.o : lib/cocky_library.c lib/cocky_library.h
 test.o : test.c template.h
 	gcc -c test.c
 
+valgrind : dist dist/template.out
+	valgrind dist/template.out 23_cocky_stuff dist
+
 dist:
 	mkdir dist
-
-valgrind :
-	valgrind dist/template.out 23_cocky_stuff ../..
 
 clear :
 	rm -f *.o dist/*.out
