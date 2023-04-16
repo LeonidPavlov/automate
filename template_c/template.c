@@ -21,7 +21,7 @@ void interview(int argc, char* argv[])
     switch (argc)
     {
     case 1:
-        log("\nto less params, than need ", argc -1, "%d");
+        log("\nto less params is ", argc - 1, "%d");
         log("", usage, "%s");
         break;
 
