@@ -54,4 +54,72 @@ fi
 
 mkdir $project_folder && cd $project_folder
 
- 
+namespace="lnp"
+
+header_file="${lc_header}.hpp"
+row_file="${lc_header}.cpp"
+main_file="main.cpp"
+
+{
+    echo "#ifndef ${uc_header}"
+    echo "#define ${uc_header}"
+    echo ""
+    echo "namespace ${namespace}"
+    echo "{"
+    echo -e "\tvoid greeting(void);"
+    echo "}"
+    echo ""
+    echo "#endif"
+} > $header_file
+
+{
+    echo "#include <iostream>"
+    echo ""
+    echo "#include \"${header_file}\""
+    echo ""
+    echo "using namespace std;"
+    echo ""
+    echo ""
+    echo "namespace ${namespace}"
+    echo "{"
+    echo -e "\tvoid greeting(void)"
+    echo -e "\t{"
+    echo -e "\t\tcout << \"${uc_header}\" << endl;"
+    echo -e "\t}"
+    echo "}"
+} > $row_file
+
+{
+    echo "#include \"$header_file\""
+    echo ""
+    echo "int main(int argc, char* argv[])"
+    echo "{"
+    echo -e "\t${namespace}::greeting();"
+    echo "}"
+} > $main_file
+
+mkdir dist
+executable="${lc_header}.out"
+
+{
+    echo "all : dist/${executable}"
+    echo -e "\tdist/${executable}"
+    echo ""
+    echo "dist/${executable} : ${lc_header}.o main.o ${lc_header}.hpp"
+    echo -e "\tg++ ${lc_header}.o main.o -o dist/$executable"
+    echo ""
+    echo "main.o : main.cpp ${lc_header}.hpp"
+    echo -e "\tg++ -c main.cpp"
+    echo ""
+    echo "${lc_header}.o : ${lc_header}.cpp ${lc_header}.hpp"
+    echo -e "\tg++ -c ${lc_header}.cpp"
+    echo ""
+    echo "clear : "
+    echo -e "\trm -f *.o dist/*"
+    echo ""
+    echo "valgrind : all"
+    echo -e "\tvalgrind dist/${executable}" 
+} > makefile
+
+make
+
